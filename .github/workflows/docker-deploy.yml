@@ -1,3 +1,33 @@
+# name: Build and Push Docker Image
+
+# on:
+#   push:
+#     branches:
+#       - main
+
+# jobs:
+#   build-and-push:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#     - name: Checkout repository
+#       uses: actions/checkout@v3
+
+#     - name: Set up Docker Buildx
+#       uses: docker/setup-buildx-action@v3
+
+#     - name: Log in to DockerHub
+#       uses: docker/login-action@v3
+#       with:
+#         username: ${{ secrets.DOCKER_USERNAME }}
+#         password: ${{ secrets.DOCKER_PASSWORD }}
+
+#     - name: Build and push Docker image
+#       uses: docker/build-push-action@v5
+#       with:
+#         context: .
+#         push: true
+#         tags: rabidin/static-website-demo:latest
 name: Build and Push Docker Image
 
 on:
@@ -6,7 +36,7 @@ on:
       - main
 
 jobs:
-  build-and-push:
+  build-image:
     runs-on: ubuntu-latest
 
     steps:
@@ -22,7 +52,38 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Build and push Docker image
+    - name: Build Docker image only (no push)
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: false
+        tags: rabidn/static-website-demo:latest
+        outputs: type=docker,dest=/tmp/image.tar
+
+    - name: Upload image as artifact (optional)
+      uses: actions/upload-artifact@v4
+      with:
+        name: static-site-image
+        path: /tmp/image.tar
+
+  push-image:
+    needs: build-image
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to DockerHub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Build and Push Docker image
       uses: docker/build-push-action@v5
       with:
         context: .
